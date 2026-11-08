@@ -27,6 +27,8 @@ const (
 	defaultTextFalse = "false"
 )
 
+const outputFlag = "output"
+
 var version = "dev"
 
 func main() {
@@ -124,6 +126,7 @@ func main() {
 			newSecretsCmd(),
 			newKubeconfigCmd(),
 			newTalosconfigCmd(),
+			newOmniCmd(),
 		},
 	}
 
