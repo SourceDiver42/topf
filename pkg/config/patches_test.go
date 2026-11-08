@@ -5,6 +5,7 @@ package config
 
 import (
 	"bytes"
+	"net/netip"
 	"os"
 	"testing"
 
@@ -109,6 +110,26 @@ func TestLoadFileTemplate(t *testing.T) {
 
 		if !bytes.Contains(content, []byte("hostname: EU")) {
 			t.Errorf("expected rendered sprig functions, got:\n%s", content)
+		}
+	})
+
+	t.Run("all nodes are available", func(t *testing.T) {
+		ip := netip.MustParseAddr("10.0.0.11")
+		nodesCtx := *ctx
+		nodesCtx.Nodes = []Node{
+			{Host: "cp1", Role: RoleControlPlane, IP: &ip},
+			{Host: "worker1", Role: RoleWorker},
+		}
+
+		f := writeTempTpl(t, "ingress:\n{{- range .Nodes }}{{ if eq .Role \"control-plane\" }}\n  - subnet: {{ .IP }}/32{{ end }}{{ end }}\n")
+
+		content, _, err := nodesCtx.loadFile(f)
+		if err != nil {
+			t.Fatalf("loadFile() error: %v", err)
+		}
+
+		if want := "ingress:\n  - subnet: 10.0.0.11/32\n"; string(content) != want {
+			t.Errorf("expected %q, got %q", want, content)
 		}
 	})
 

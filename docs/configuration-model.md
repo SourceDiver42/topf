@@ -80,6 +80,7 @@ Patches ending with `.yaml.tpl` support [Go templating](https://pkg.go.dev/text/
 | `.Node.RuntimeData.TalosVersion` | Talos version reported by the **live node** (no `v` prefix; empty when rendering offline or before the node was contacted) |
 | `.Node.RuntimeData.SchematicID` | Schematic ID reported by the live node |
 | `.Node.RuntimeData.Stage` | Machine stage reported by the live node (`booting`, `installing`, `maintenance`, `running`, `rebooting`, `shutting down`, `resetting`, `upgrading`) |
+| `.Nodes` | All nodes of the cluster (including those from a `nodesProvider`), each with the same fields as `.Node`. Always the full list, even with `--nodes-filter`. Runtime data is not included |
 
 Runtime data is collected from live nodes by `apply`, `upgrade`, `reset`, and `render --online`. When rendering offline (`render` without `--online`), all runtime fields are empty.
 
@@ -116,6 +117,25 @@ kind: RegistryMirrorConfig
 name: ghcr.io
 endpoints:
   - url: {{ env "REGISTRY_MIRROR" }}
+{{- end }}
+```
+
+Generate firewall rules from the list of all nodes, e.g. allowing etcd and apid traffic only from control-plane nodes:
+
+```yaml
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: control-plane-ingress
+portSelector:
+  ports:
+    - 2379-2380
+    - 50000
+  protocol: tcp
+ingress:
+{{- range .Nodes }}
+{{- if and (eq .Role "control-plane") .IP }}
+  - subnet: {{ .IP }}/32
+{{- end }}
 {{- end }}
 ```
 

@@ -145,6 +145,7 @@ func (t *topf) generateNodeConfig(ctx context.Context, node *Node) error {
 		TalosVersion:      cfg.TalosVersion,
 		SchematicID:       cmp.Or(node.Node.SchematicID, cfg.SchematicID, DefaultSchematic),
 		Node:              node.Node,
+		Nodes:             t.staticNodes,
 		Data:              cfg.Data,
 		PatchesDir:        t.patchesDir,
 		DecryptCache:      t.decryptCache,

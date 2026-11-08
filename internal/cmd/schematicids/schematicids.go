@@ -23,6 +23,7 @@ func Execute(ctx context.Context, t topf.Topf, w io.Writer) error {
 	cfg := t.Config()
 
 	ids := make(map[string]struct{})
+	allNodes := cfg.StaticNodes()
 
 	for _, node := range cfg.Nodes {
 		factory := cmp.Or(node.Factory, cfg.Factory, topf.DefaultFactory)
@@ -36,6 +37,7 @@ func Execute(ctx context.Context, t topf.Topf, w io.Writer) error {
 			SchematicID:       schematicID,
 			Data:              cfg.Data,
 			Node:              &node,
+			Nodes:             allNodes,
 		}
 
 		resolved, err := t.ResolveSchematic(ctx, factory, schematicID, patchCtx)

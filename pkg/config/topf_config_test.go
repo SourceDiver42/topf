@@ -115,3 +115,19 @@ nodes:
 		}
 	})
 }
+
+func TestStaticNodes(t *testing.T) {
+	cfg := &TopfConfig{Nodes: []Node{
+		{Host: "cp1", RuntimeData: RuntimeData{TalosVersion: "1.14.4"}},
+	}}
+
+	nodes := cfg.StaticNodes()
+
+	if nodes[0].RuntimeData != (RuntimeData{}) {
+		t.Errorf("expected empty runtime data, got %+v", nodes[0].RuntimeData)
+	}
+
+	if cfg.Nodes[0].RuntimeData.TalosVersion != "1.14.4" {
+		t.Error("StaticNodes modified the original nodes")
+	}
+}

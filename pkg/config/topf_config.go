@@ -133,6 +133,16 @@ func LoadFromFile(path string) (config *TopfConfig, secrets []string, err error)
 	return config, secrets, err
 }
 
+// StaticNodes returns a copy of all nodes without runtime data.
+func (t *TopfConfig) StaticNodes() []Node {
+	nodes := slices.Clone(t.Nodes)
+	for i := range nodes {
+		nodes[i].RuntimeData = RuntimeData{}
+	}
+
+	return nodes
+}
+
 // GetSecretsProvider returns the configured secrets provider, or the default filesystem provider
 func (t *TopfConfig) GetSecretsProvider(cache *decryption.Cache) providers.SecretsProvider {
 	if t.SecretsProvider != "" {

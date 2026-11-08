@@ -30,6 +30,7 @@ type PatchContext struct {
 	SchematicID       string
 	Data              map[string]any
 	Node              *Node
+	Nodes             []Node
 	PatchesDir        string
 	DecryptCache      *decryption.Cache
 }

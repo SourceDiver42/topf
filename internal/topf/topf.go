@@ -164,6 +164,7 @@ func NewTopfRuntime(cfg RuntimeConfig) (Topf, error) {
 		resolver:     schematic.NewResolver(filepath.Dir(cfg.ConfigPath), cfg.TopfVersion, schematic.WithSubmitToFactory(cfg.SubmitToFactory), schematic.WithLogger(cfg.Logger)),
 		decryptCache: decryptCache,
 		nodesFilter:  nodesFilter,
+		staticNodes:  topfConfig.StaticNodes(),
 	}, nil
 }
 
@@ -180,6 +181,7 @@ type topf struct {
 	resolver      *schematic.Resolver
 	decryptCache  *decryption.Cache
 	nodesFilter   *regexp.Regexp
+	staticNodes   []config.Node
 }
 
 func (t *topf) Config() *config.TopfConfig {
