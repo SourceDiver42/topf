@@ -1,0 +1,21 @@
+kubernetesVersion: 1.35.5
+talosVersion: 1.14.0
+clusterEndpoint: https://10.5.0.2:6443
+clusterName: firewall-example
+
+nodes:
+  - host: cp1
+    ip: 10.5.0.2
+    role: control-plane
+  - host: cp2
+    ip: 10.5.0.3
+    role: control-plane
+  - host: cp3
+    ip: 10.5.0.4
+    role: control-plane
+  - host: worker1
+    ip: 10.5.0.5
+    role: worker
+  - host: worker2
+    ip: 10.5.0.6
+    role: worker
