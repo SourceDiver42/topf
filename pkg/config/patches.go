@@ -66,6 +66,36 @@ func (p *PatchContext) Load() (patches []configpatcher.Patch, secrets []string, 
 }
 
 func (p *PatchContext) loadFolder(folder string) ([]configpatcher.Patch, []string, error) {
+	filePaths, err := patchFiles(folder)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var (
+		patches []configpatcher.Patch
+		secrets []string
+	)
+
+	for _, filePath := range filePaths {
+		templatedFileContent, fileSecrets, err := p.loadFile(filePath)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		secrets = append(secrets, fileSecrets...)
+
+		patchesInFile, err := parsePatches(templatedFileContent)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse patches in file %s: %w", filePath, err)
+		}
+
+		patches = append(patches, patchesInFile...)
+	}
+
+	return patches, secrets, nil
+}
+
+func patchFiles(folder string) ([]string, error) {
 	var filePaths []string
 
 	pattern := regexp.MustCompile(`.*\.ya?ml(\.tpl)?`)
@@ -112,34 +142,104 @@ func (p *PatchContext) loadFolder(folder string) ([]configpatcher.Patch, []strin
 	err := filepath.WalkDir(folder, walkFunc)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil, nil
+			return nil, nil
 		}
 
-		return nil, nil, err
+		return nil, err
+	}
+
+	return filePaths, nil
+}
+
+// PatchScope is the folder a patch file was loaded from.
+type PatchScope string
+
+// Patch scopes, in the order they are applied.
+const (
+	ScopeAll  PatchScope = "all"
+	ScopeRole PatchScope = "role"
+	ScopeNode PatchScope = "node"
+)
+
+// RenderedFile is a patch file rendered for one node.
+type RenderedFile struct {
+	Scope     PatchScope
+	Path      string
+	Documents []map[string]any
+}
+
+// RenderFiles renders the patch files of the node without merging them.
+func (p *PatchContext) RenderFiles() ([]RenderedFile, []string, error) {
+	folders := []struct {
+		scope  PatchScope
+		folder string
+	}{
+		{ScopeAll, "all"},
+		{ScopeRole, string(p.Node.Role)},
+		{ScopeNode, filepath.Join("node", p.Node.Host)},
 	}
 
 	var (
-		patches []configpatcher.Patch
+		files   []RenderedFile
 		secrets []string
 	)
 
-	for _, filePath := range filePaths {
-		templatedFileContent, fileSecrets, err := p.loadFile(filePath)
+	for _, f := range folders {
+		filePaths, err := patchFiles(filepath.Join(p.PatchesDir, f.folder))
 		if err != nil {
 			return nil, nil, err
 		}
 
-		secrets = append(secrets, fileSecrets...)
+		for _, filePath := range filePaths {
+			content, fileSecrets, err := p.loadFile(filePath)
+			if err != nil {
+				return nil, nil, err
+			}
 
-		patchesInFile, err := parsePatches(templatedFileContent)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse patches in file %s: %w", filePath, err)
+			secrets = append(secrets, fileSecrets...)
+
+			if _, err := parsePatches(content); err != nil {
+				return nil, nil, fmt.Errorf("failed to parse patches in file %s: %w", filePath, err)
+			}
+
+			docs, err := splitDocuments(content)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to parse patches in file %s: %w", filePath, err)
+			}
+
+			rel, err := filepath.Rel(p.PatchesDir, filePath)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			files = append(files, RenderedFile{Scope: f.scope, Path: filepath.ToSlash(rel), Documents: docs})
 		}
-
-		patches = append(patches, patchesInFile...)
 	}
 
-	return patches, secrets, nil
+	return files, secrets, nil
+}
+
+func splitDocuments(data []byte) ([]map[string]any, error) {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+
+	var docs []map[string]any
+
+	for {
+		var doc map[string]any
+
+		err := decoder.Decode(&doc)
+		if errors.Is(err, io.EOF) {
+			return docs, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(doc) > 0 {
+			docs = append(docs, doc)
+		}
+	}
 }
 
 // RenderTemplate renders a Go template file with the given data.
