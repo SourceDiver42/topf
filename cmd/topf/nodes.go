@@ -22,7 +22,7 @@ func newNodesCmd() *cli.Command {
 		Before: noPositionalArgs,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:    "output",
+				Name:    outputFlag,
 				Aliases: []string{"o"},
 				Usage:   "output format (table, yaml)",
 				Value:   "table",
@@ -36,7 +36,7 @@ func newNodesCmd() *cli.Command {
 				return err
 			}
 
-			outputFormat := cmd.String("output")
+			outputFormat := cmd.String(outputFlag)
 
 			switch outputFormat {
 			case "table":

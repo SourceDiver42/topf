@@ -23,7 +23,7 @@ func newRenderCmd() *cli.Command {
 		Before:      noPositionalArgs,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:        "output",
+				Name:        outputFlag,
 				Aliases:     []string{"o"},
 				Usage:       "directory to write machine configs",
 				Value:       "./output",
@@ -43,7 +43,7 @@ func newRenderCmd() *cli.Command {
 				return err
 			}
 
-			return writeMachineConfigs(nodes, c.String("output"), t)
+			return writeMachineConfigs(nodes, c.String(outputFlag), t)
 		},
 	}
 }
